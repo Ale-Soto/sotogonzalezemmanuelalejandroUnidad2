@@ -64,9 +64,27 @@ document.getElementById('botonBusqueda').addEventListener('click', () => { //>Pa
 })
 
 function fetchDatosClima(ciudad) {
-    fetch(`${urlBase}?q=${ciudad}&appid=${api_key}`) //>Al ejecutar la api obtenemos un nodo con toda la información del tiempo.
-        .then(data => data.json()) //aqui declaramos la variable data como forma de promesa
-        .then(data => mostrarDatosClima(data)) //que al cumplirse ejecuta la funcion mostrarDatosClima
+    const datosClimaDiv = document.getElementById('datosClima');
+    datosClimaDiv.innerHTML = '<div class="spinner">Cargando...</div>';
+
+    fetch(`${urlBase}?q=${ciudad}&appid=${api_key}`)
+        .then(response => {
+            if (!response.ok) {
+                // Si la respuesta no es 2xx (ej. 404)
+                throw new Error(response.status === 404 ? 'Ciudad no encontrada' : 'Error en la petición');
+            }
+            return response.json();
+        })
+        .then(data => {
+            mostrarDatosClima(data);
+        })
+        .catch(error => {
+            datosClimaDiv.innerHTML = `
+                <p class="error">${error.message === 'Ciudad no encontrada' 
+                    ? `"${ciudad}" no fue encontrada. Intenta con otro nombre.` 
+                    : 'Error al obtener datos. Intenta nuevamente.'}
+                </p>`;
+        });
 }
 
 
@@ -76,6 +94,12 @@ function mostrarDatosClima(data) { //Esta funcion obtiene el elemento html con i
     const divDatosClima = document.getElementById('datosClima')
     divDatosClima.innerHTML = ''
         //https://openweathermap.org/img/wn/10d@2x.png
+
+            // Verificamos si la API devuelve datos inesperados
+    if (!data || !data.sys || !data.weather) {
+        throw new Error('Datos climáticos incompletos');
+    }
+
         //Aqi declaramos las variables que se desplegaran acorde a la obtención de los datos:
     const ciudadNombre = data.name; //debido a que data viene a ser un nodo le otorgamos el valor de cada clave correspondiente a cada variable.
     const paisNombre = data.sys.country;
